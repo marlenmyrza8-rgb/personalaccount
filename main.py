@@ -856,11 +856,8 @@ async def adm_addquestion(callback: types.CallbackQuery, state: FSMContext) -> N
         await callback.answer("Тек бас админ.", show_alert=True)
         return
     await callback.message.answer(
-        "❓ *Жаңа сұрақ қосу*
-
-        "
-        "1-қадам: Пән атын жазыңыз
-        "
+        "❓ *Жаңа сұрақ қосу*\n\n"
+        "1-қадам: Пән атын жазыңыз\n"
         "_(мысалы: Математика, Физика, Қазақстан тарихы)_",
         parse_mode="Markdown",
     )
@@ -877,17 +874,11 @@ async def aq_subject(message: types.Message, state: FSMContext) -> None:
 async def aq_question(message: types.Message, state: FSMContext) -> None:
     await state.update_data(question=message.text.strip())
     await message.answer(
-        "3-қадам: 4 нұсқаны жазыңыз (әр нұсқа жаңа жолдан):
-
-        "
-        "_Мысалы:_
-        "
-        "Керей мен Жәнібек
-        "
-        "Қасым мен Хақназар
-        "
-        "Абылай мен Тәуке
-        "
+        "3-қадам: 4 нұсқаны жазыңыз (әр нұсқа жаңа жолдан):\n\n"
+        "_Мысалы:_\n"
+        "Керей мен Жәнібек\n"
+        "Қасым мен Хақназар\n"
+        "Абылай мен Тәуке\n"
         "Есім мен Салқам",
         parse_mode="Markdown",
     )
@@ -901,15 +892,10 @@ async def aq_options(message: types.Message, state: FSMContext) -> None:
         return
     await state.update_data(options=opts)
     await message.answer(
-        f"4-қадам: Дұрыс жауап нөмірін жазыңыз:
-
-        "
-        f"1 — {opts[0]}
-        "
-        f"2 — {opts[1]}
-        "
-        f"3 — {opts[2]}
-        "
+        f"4-қадам: Дұрыс жауап нөмірін жазыңыз:\n\n"
+        f"1 — {opts[0]}\n"
+        f"2 — {opts[1]}\n"
+        f"3 — {opts[2]}\n"
         f"4 — {opts[3]}"
     )
     await state.set_state(AddQuestionState.waiting_for_correct)
@@ -921,8 +907,9 @@ async def aq_correct(message: types.Message, state: FSMContext) -> None:
         if correct not in [0, 1, 2, 3]:
             raise ValueError
     except ValueError:
-        await message.answer("❌ 1, 2, 3 немесе 4 жазыңыз.")
+        await message.answer("❌ 1, 2, 3 немесе 4 санын ғана жазыңыз.")
         return
+
     data = await state.get_data()
     qid = add_question(
         subject=data["subject"],
@@ -932,58 +919,19 @@ async def aq_correct(message: types.Message, state: FSMContext) -> None:
         added_by=message.from_user.id,
     )
     opts = data["options"]
+
     await message.answer(
-        f"✅ Сұрақ қосылды! (ID: {qid})
-
-        "
-        f"📚 Пән: *{data['subject']}*
-        "
-        f"❓ {data['question']}
-
-        "
-        f"A) {opts[0]}
-    B) {opts[1]}
-C) {opts[2]}
-D) {opts[3]}
-
-"
-f"✅ Дұрыс: {'ABCD'[correct]}) {opts[correct]}",
-parse_mode="Markdown",
-)
-await state.clear()
-
-@dp.callback_query(F.data == "adm_delquestion")
-async def adm_delquestion(callback: types.CallbackQuery) -> None:
-    if not is_main_admin(callback.from_user.id):
-        await callback.answer("Тек бас админ.", show_alert=True)
-        return
-    all_q = get_all_questions()
-    if not all_q:
-        await callback.answer("Сұрақтар жоқ.", show_alert=True)
-        return
-    # Соңғы 10 сұрақты көрсетеміз
-    recent = all_q[-10:]
-    kb = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(
-            text=f"🗑 {q['id']}. {q['question'][:40]}...",
-            callback_data=f"delq_{q['id']}"
-        )]
-        for q in recent
-    ])
-    await callback.message.answer(f"Жойылатын сұрақты таңдаңыз (соңғы {len(recent)}):", reply_markup=kb)
-    await callback.answer()
-
-@dp.callback_query(F.data.startswith("delq_"))
-async def do_delquestion(callback: types.CallbackQuery) -> None:
-    qid = int(callback.data.split("_")[1])
-    ok  = delete_question(qid)
-    if ok:
-        await callback.message.answer(f"✅ Сұрақ #{qid} жойылды.")
-    else:
-        await callback.answer("Табылмады.", show_alert=True)
-    await callback.answer()
-
-
+        f"✅ Сұрақ қосылды! (ID: {qid})\n\n"
+        f"📚 Пән: *{data['subject']}*\n"
+        f"❓ {data['question']}\n\n"
+        f"A) {opts[0]}\n"
+        f"B) {opts[1]}\n"
+        f"C) {opts[2]}\n"
+        f"D) {opts[3]}\n\n"
+        f"✅ Дұрыс: {'ABCD'[correct]}) {opts[correct]}",
+        parse_mode="Markdown",
+    )
+    await state.clear()
 # ===========================================================================
 # КУРАТОР ПАНЕЛЬ
 # ===========================================================================
@@ -1367,6 +1315,7 @@ async def main() -> None:
     asyncio.create_task(deadline_notifier())
     asyncio.create_task(daily_challenge_scheduler())
     await dp.start_polling(bot)
+
 
 if __name__ == "__main__":
     asyncio.run(main())
