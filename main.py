@@ -1289,22 +1289,6 @@ async def deadline_notifier() -> None:
 
 async def daily_challenge_scheduler() -> None:
     """Күн сайын 09:00-де Daily Challenge жіберу."""
-    questions = []
-    try:
-        from questions import QUESTIONS  # optional local seed
-        questions = QUESTIONS
-    except ImportError:
-        questions = []
-    # Бастапқы сұрақтарды базаға жүктеу (тек бір рет)
-    if get_question_count() == 0 and questions:
-        for q in questions:
-            add_question(
-                subject=q["subject"],
-                question=q["q"],
-                options=q["a"],
-                correct=q["correct"],
-            )
-
     while True:
         now = datetime.now()
         # Келесі 09:00-ді есептеу
