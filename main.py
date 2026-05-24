@@ -2,7 +2,7 @@ import asyncio
 import json
 import os
 import re
-from datetime import datetime
+from datetime import datetime, timedelta, date
 
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import Command
@@ -16,7 +16,6 @@ from aiogram.fsm.state import State, StatesGroup
 
 from schedule_generator import generate_schedule_image
 import random
-from datetime import date
 from database import (
     init_db, is_admin, ADMIN_ID,
     add_user, add_user_curator, get_user_curators,
@@ -38,7 +37,9 @@ from database import (
 # ---------------------------------------------------------------------------
 # Баптаулар
 # ---------------------------------------------------------------------------
-API_TOKEN        = os.getenv("BOT_TOKEN", "МҰНДА_ӨЗ_ТОКЕНІҢІЗДІ_ҚОЙЫҢЫЗ")
+API_TOKEN = os.getenv("BOT_TOKEN")
+if not API_TOKEN:
+    raise RuntimeError("Environment variable BOT_TOKEN is required.")
 
 bot = Bot(token=API_TOKEN)
 dp  = Dispatcher()
@@ -1270,7 +1271,7 @@ async def deadline_notifier() -> None:
             hours_left  = (deadline_dt - datetime.now()).total_seconds() / 3600
             for h in NOTIFY_HOURS:
                 label = str(h)
-                if hours_left <= h and not was_notified(task["id"], label):
+                if 0 < hours_left <= h and not was_notified(task["id"], label):
                     mark_task_notified(task["id"], label)
                     text = (
                         f"⚠️ *ЕСКЕРТУ!*\n"
@@ -1288,10 +1289,15 @@ async def deadline_notifier() -> None:
 
 async def daily_challenge_scheduler() -> None:
     """Күн сайын 09:00-де Daily Challenge жіберу."""
-    from questions import QUESTIONS
+    questions = []
+    try:
+        from questions import QUESTIONS  # optional local seed
+        questions = QUESTIONS
+    except ImportError:
+        questions = []
     # Бастапқы сұрақтарды базаға жүктеу (тек бір рет)
-    if get_question_count() == 0:
-        for q in QUESTIONS:
+    if get_question_count() == 0 and questions:
+        for q in questions:
             add_question(
                 subject=q["subject"],
                 question=q["q"],
@@ -1304,8 +1310,8 @@ async def daily_challenge_scheduler() -> None:
         # Келесі 09:00-ді есептеу
         target = now.replace(hour=9, minute=0, second=0, microsecond=0)
         if now >= target:
-            target = target.replace(day=target.day + 1)
-        wait_seconds = (target - now).total_seconds()
+            target = target + timedelta(days=1)
+        wait_seconds = max((target - now).total_seconds(), 0)
         await asyncio.sleep(wait_seconds)
         await send_daily_challenge_to_all()
 

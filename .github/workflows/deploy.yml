@@ -3,7 +3,7 @@ name: Deploy bot on VPS
 on:
   push:
     branches:
-      - master
+      - main
 
 jobs:
   deploy:
